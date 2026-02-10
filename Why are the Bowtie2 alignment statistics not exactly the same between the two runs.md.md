@@ -3,25 +3,25 @@
 ---
 
 ## 现象
-zcat output/04_trim_linker/DNaseC_K562_NaOH_R1r1_trimLk3_1.fq.gz | head -8
-@E250150528L1C001R0010001006;GT;no_adapter;no_adapter
-ATGGTCTCCCAGTACTGTTTGTAGGTACTGTTTTTCTTGGGTTGGGGTGGGGGCGTAGATGT
-+
-GCIICICIIIGIBGICICCCICGIICGICICCCCCECCIIICCIIGIB?IIIII?BGIC@IC
-@E250150528L1C001R0010006313;GG;no_adapter;no_adapter
-TTCCCATAAAAACTAGACTGAAGCCTTCTCAGAAACTTGATCCTCAT
-+
-CC?DIGCGGGGG7C?GG*@??A?@BCCDCIGHDGG0?C?.?FICIG@
+```zcat output/04_trim_linker/DNaseC_K562_NaOH_R1r1_trimLk3_1.fq.gz | head -8```  
+@E250150528L1C001R0010001006;GT;no_adapter;no_adapter  
+ATGGTCTCCCAGTACTGTTTGTAGGTACTGTTTTTCTTGGGTTGGGGTGGGGGCGTAGATGT  
++  
+GCIICICIIIGIBGICICCCICGIICGICICCCCCECCIIICCIIGIB?IIIII?BGIC@IC  
+@E250150528L1C001R0010006313;GG;no_adapter;no_adapter  
+TTCCCATAAAAACTAGACTGAAGCCTTCTCAGAAACTTGATCCTCAT  
++  
+CC?DIGCGGGGG7C?GG*@??A?@BCCDCIGHDGG0?C?.?FICIG@  
 
-zcat output_DNaseC_K562_NaOH_R1r1/04_trim_linker/DNaseC_K562_NaOH_R1r1_trimLk3_1.fq.gz | head -8
-@E250150528L1C001R0010001006/;GT;no_adapter;no_adapter
-ATGGTCTCCCAGTACTGTTTGTAGGTACTGTTTTTCTTGGGTTGGGGTGGGGGCGTAGATGT
-+
-GCIICICIIIGIBGICICCCICGIICGICICCCCCECCIIICCIIGIB?IIIII?BGIC@IC
-@E250150528L1C001R0010006313/;GG;no_adapter;no_adapter
-TTCCCATAAAAACTAGACTGAAGCCTTCTCAGAAACTTGATCCTCAT
-+
-CC?DIGCGGGGG7C?GG*@??A?@BCCDCIGHDGG0?C?.?FICIG@
+```zcat output_DNaseC_K562_NaOH_R1r1/04_trim_linker/DNaseC_K562_NaOH_R1r1_trimLk3_1.fq.gz | head -8```  
+@E250150528L1C001R0010001006/;GT;no_adapter;no_adapter  
+ATGGTCTCCCAGTACTGTTTGTAGGTACTGTTTTTCTTGGGTTGGGGTGGGGGCGTAGATGT  
++  
+GCIICICIIIGIBGICICCCICGIICGICICCCCCECCIIICCIIGIB?IIIII?BGIC@IC  
+@E250150528L1C001R0010006313/;GG;no_adapter;no_adapter  
+TTCCCATAAAAACTAGACTGAAGCCTTCTCAGAAACTTGATCCTCAT  
++  
+CC?DIGCGGGGG7C?GG*@??A?@BCCDCIGHDGG0?C?.?FICIG@  
 
 同一套参数、同一套参考基因组，两次运行：
 ```bash
@@ -85,8 +85,8 @@ bowtie2 -p 80 --seed 42 -x /ssd/index/bowtie2/hg38XY+mm10XY \
 > 因为 Bowtie2 在处理有多个同样好比对位置的 reads 时，会用依赖 **read 名称 + 序列 + 质量 + `--seed`** 的随机种子来随机选择报告哪个位置；你改了 read ID，相当于改了随机种子的一部分，所以这些多重比对 reads 里有一小部分被分到了不同的类别，导致两次统计结果略有差别。  
 
 ---
-reference https://bowtie-bio.sourceforge.net/bowtie2/manual.shtm
-Randomness in Bowtie 2
-Bowtie 2's search for alignments for a given read is "randomized." That is, when Bowtie 2 encounters a set of equally-good choices, it uses a pseudo-random number to choose. For example, if Bowtie 2 discovers a set of 3 equally-good alignments and wants to decide which to report, it picks a pseudo-random integer 0, 1 or 2 and reports the corresponding alignment. Arbitrary choices can crop up at various points during alignment.
-The pseudo-random number generator is re-initialized for every read, and the seed used to initialize it is a function of the read name, nucleotide string, quality string, and the value specified with --seed. If you run the same version of Bowtie 2 on two reads with identical names, nucleotide strings, and quality strings, and if --seed is set the same for both runs, Bowtie 2 will produce the same output; i.e., it will align the read to the same place, even if there are multiple equally good alignments. This is intuitive and desirable in most cases. Most users expect Bowtie to produce the same output when run twice on the same input.
+reference https://bowtie-bio.sourceforge.net/bowtie2/manual.shtm  
+Randomness in Bowtie 2  
+Bowtie 2's search for alignments for a given read is "randomized." That is, when Bowtie 2 encounters a set of equally-good choices, it uses a pseudo-random number to choose. For example, if Bowtie 2 discovers a set of 3 equally-good alignments and wants to decide which to report, it picks a pseudo-random integer 0, 1 or 2 and reports the corresponding alignment. Arbitrary choices can crop up at various points during alignment.  
+The pseudo-random number generator is re-initialized for every read, and the seed used to initialize it is a function of the read name, nucleotide string, quality string, and the value specified with --seed. If you run the same version of Bowtie 2 on two reads with identical names, nucleotide strings, and quality strings, and if --seed is set the same for both runs, Bowtie 2 will produce the same output; i.e., it will align the read to the same place, even if there are multiple equally good alignments. This is intuitive and desirable in most cases. Most users expect Bowtie to produce the same output when run twice on the same input.  
 However, when the user specifies the --non-deterministic option, Bowtie 2 will use the current time to re-initialize the pseudo-random number generator. When this is specified, Bowtie 2 might report different alignments for identical reads. This is counter-intuitive for some users, but might be more appropriate in situations where the input consists of many identical reads.
