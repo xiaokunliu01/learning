@@ -1,2 +1,2 @@
 # learning  
-author: Xiakun Liu  
+author: Xiaokun Liu  
