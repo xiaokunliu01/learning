@@ -97,5 +97,3 @@ ggplot(data = df, mapping = aes(x = bin)) +
   ) 
 
 dev.off()
-
-
