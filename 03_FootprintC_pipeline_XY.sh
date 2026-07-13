@@ -10,7 +10,7 @@ set -euo pipefail
 # ============================================================================
 
 # 配置部分（根据环境修改）
-readonly THREADS=${THREADS:-40}
+readonly THREADS=${THREADS:-80}
 readonly MEMORY=${MEMORY:-100G}
 readonly BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly SOFTWARE_DIR="/home/lxk/private/software/miniconda3/bin"
@@ -283,10 +283,10 @@ run_fragment_length() {
     # 转换为 bedpe 并处理
     echo "  Converting to BEDPE..."
     ${BAMTOBED} -bedpe -i "$input_bam" | \
-        sort -k1,1 -k2,3n -k4,4 -k5,6n -S "${MEMORY}" | \
+        sort -k1,1 -k2,3n -k4,4 -k5,6n -S "${MEMORY}" --parallel=$((THREADS / 1)) | \
         awk '{if($1==$4 && $2>$5){print $4 "\t" $5 "\t" $6 "\t" $1 "\t" $2 "\t" $3 "\t" $7 "\t" $8 "\t" $10 "\t" $9}else{print $0}}' | \
         awk -F';' '{print $1 "\t" $2$3$4$5$6$7$8$9}' | \
-        sort -k1,6 -k8,8 -k10,11 -u -S "${MEMORY}" | \
+        sort -k1,6 -k8,8 -k10,11 -u -S "${MEMORY}" --parallel=$((THREADS / 1)) | \
         awk '{if($1!~/chr[CLMT]/ && $4!~/chr[CLMT]/ && $8!="no_adapterno_adapterno_adapter") print $0}' \
         > "${frag_dir}/${SAMPLE_NAME}_rmdup.pair"
     
@@ -298,7 +298,7 @@ run_fragment_length() {
     echo "  Generating V-plot data..."
     awk '{print $1"\t"int(($2+$3)/2)"\t"int(($2+$3)/2)+1"\t"NR"\t"$3-$2"\t"$10"\n"$4"\t"int(($5+$6)/2)"\t"int(($5+$6)/2)+1"\t"NR"_2""\t"$6-$5"\t"$11}' \
         "${frag_dir}/${SAMPLE_NAME}_rmdup.pair" | \
-        sort -k1,1 -k2,2n -S "${MEMORY}" \
+        sort -k1,1 -k2,2n -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         > "${frag_dir}/${SAMPLE_NAME}_sort.singlepair"
     
     closestBed -a "${frag_dir}/${SAMPLE_NAME}_sort.singlepair" \
@@ -324,12 +324,12 @@ run_dimerization() {
     # 分离 up/down stream
     awk '{print $1"\t"$2"\t"$3"\t"$7"\t"$10}' \
         "../../07_fragment_len/${SAMPLE_NAME}_rmdup.pair" | \
-        sort -k1,1 -k2,2n -S "${MEMORY}" \
+        sort -k1,1 -k2,2n -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         > "${SAMPLE_NAME}_rmdup_sort.uppair"
     
     awk '{print $4"\t"$5"\t"$6"\t"$7"\t"$11}' \
         "../../07_fragment_len/${SAMPLE_NAME}_rmdup.pair" | \
-        sort -k1,1 -k2,2n -S "${MEMORY}" \
+        sort -k1,1 -k2,2n -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         > "${SAMPLE_NAME}_rmdup_sort.downpair"
     
     # 找最近的 CTCF motif
@@ -345,13 +345,13 @@ run_dimerization() {
     rm -f "${SAMPLE_NAME}_rmdup_sort.uppair" "${SAMPLE_NAME}_rmdup_sort.downpair"
     
     # 合并配对
-    sort -k4,4 -S "${MEMORY}" \
+    sort -k4,4 -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         "${SAMPLE_NAME}_rmdup_sort_uppair_closest_CTCFmotif.txt" \
         > "${SAMPLE_NAME}_rmdup_sort_uppair_closest_CTCFmotif_sort.txt"
     
     rm -f "${SAMPLE_NAME}_rmdup_sort_uppair_closest_CTCFmotif.txt"
 
-    sort -k4,4 -S "${MEMORY}" \
+    sort -k4,4 -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         "${SAMPLE_NAME}_rmdup_sort_downpair_closest_CTCFmotif.txt" \
         > "${SAMPLE_NAME}_rmdup_sort_downpair_closest_CTCFmotif_sort.txt"
     
@@ -387,7 +387,7 @@ run_aschip() {
     
     local total_reads=$(wc -l < "${aschip_dir}/${SAMPLE_NAME}_rmdup.bed")
     
-    sort -k1,1 -k2,2n -k3,3n -S "${MEMORY}" \
+    sort -k1,1 -k2,2n -k3,3n -S "${MEMORY}" --parallel=$((THREADS / 1)) \
         "${aschip_dir}/${SAMPLE_NAME}_rmdup.bed" | \
         genomeCoverageBed -bg -i - -g "$GENOME_SIZE" | \
         awk -v total="$total_reads" '{printf "%s\t%.0f\t%.0f\t%.2f\n",$1,$2,$3,$4/total*1000000}' | \
@@ -434,15 +434,19 @@ run_rm() {
     
     rm -f "${OUTPUT_DIR}/02_trim_adapt"/*.fq.gz
     rm -f "${OUTPUT_DIR}/03_merge"/*.fastq.gz
+    rm -f "${OUTPUT_DIR}/03_merge"/*.hist
+    rm -f "${OUTPUT_DIR}/03_merge"/*.histogram
     rm -f "${OUTPUT_DIR}/04_trim_linker"/*.fq.gz
     
     rm -rf "${OUTPUT_DIR}/05_hicpro/data"
     rm -rf "${OUTPUT_DIR}/05_hicpro/hicpro_results/bowtie_results/bwt2_global"
     
     rm -f "${OUTPUT_DIR}/05_hicpro/hicpro_results/hic_results/data/${SAMPLE_NAME}_trimLk3/${SAMPLE_NAME}__hg38XY.bwt2pairs.validPairs"
+    rm -f "${OUTPUT_DIR}/05_hicpro/hicpro_results/hic_results/data/${SAMPLE_NAME}_trimLk3/${SAMPLE_NAME}_trimLk3.allValidPairs"
     
     rm -f "${OUTPUT_DIR}/06_optical_dup"/*.bam
-    
+    rm -f "${OUTPUT_DIR}/06_optical_dup"/*.metrics
+
     rm -f "${OUTPUT_DIR}/07_fragment_len"/*.txt
     rm -f "${OUTPUT_DIR}/07_fragment_len"/*.singlepair
     
